@@ -1,0 +1,339 @@
+/*
+ * Reusable primitives as Tailwind utilities, so they compose with variants
+ * (md:btn-lg, hover:link, …) and can be overridden by plain utilities.
+ */
+
+/* ---------- Layout ---------- */
+
+/* Full-width page frame with fluid side gutters. */
+@utility container-page {
+  width: 100%;
+  max-width: var(--container-page);
+  margin-inline: auto;
+  padding-inline: var(--spacing-gutter);
+}
+
+/* Centred content column for text-led pages (account, checkout, info). */
+@utility container-content {
+  width: 100%;
+  max-width: var(--container-content);
+  margin-inline: auto;
+  padding-inline: var(--spacing-gutter);
+}
+
+/* Reading measure for long-form copy. */
+@utility container-prose {
+  width: 100%;
+  max-width: var(--container-measure);
+  margin-inline: auto;
+  padding-inline: var(--spacing-gutter);
+}
+
+@utility section {
+  padding-block: var(--spacing-section);
+}
+
+@utility section-sm {
+  padding-block: var(--spacing-section-sm);
+}
+
+/* Sticky top bar; height tracks --header-height. */
+@utility header-bar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: var(--header-height);
+  background-color: var(--color-canvas);
+  border-bottom: 1px solid var(--color-line);
+}
+
+/* Full-viewport hero below the header; children stack in one grid cell. */
+@utility hero {
+  position: relative;
+  display: grid;
+  min-height: calc(100svh - var(--header-height));
+  overflow: hidden;
+
+  & > * {
+    grid-area: 1 / 1;
+  }
+}
+
+/* Product listing: 2 → 3 → 4 columns, tight columns, airy rows. */
+@utility grid-products {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 0.25rem;
+  row-gap: 2rem;
+
+  @variant md {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 1rem;
+    row-gap: 3rem;
+  }
+
+  @variant xl {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Editorial grid: 4 columns on mobile, 12 from md, gutter-width gaps. */
+@utility grid-editorial {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--spacing-gutter);
+
+  @variant md {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+}
+
+/* Horizontal snap rail for product carousels; scrolls edge to edge. */
+@utility rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 70%;
+  gap: 0.25rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--spacing-gutter);
+  padding-inline: var(--spacing-gutter);
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  & > * {
+    scroll-snap-align: start;
+  }
+
+  /* Exactly 3 / 4 whole cards: % resolves against the content box, so only
+   * the gaps are subtracted (the gutters are padding). */
+  @variant md {
+    grid-auto-columns: calc((100% - 2rem) / 3);
+    gap: 1rem;
+  }
+
+  @variant xl {
+    grid-auto-columns: calc((100% - 3rem) / 4);
+  }
+}
+
+/* ---------- Media ---------- */
+
+/* Image/video frame: fills the box, grey placeholder while loading. */
+@utility media-frame {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--color-surface);
+
+  & > img,
+  & > video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+/* Gradient behind text laid over imagery. */
+@utility scrim {
+  background-image: linear-gradient(
+    to top,
+    var(--color-scrim),
+    color-mix(in srgb, var(--color-scrim) 40%, transparent) 45%,
+    transparent 75%
+  );
+}
+
+/* ---------- Typography ---------- */
+
+/* Small uppercase tracked label: nav items, eyebrows, tags. */
+@utility eyebrow {
+  font-size: var(--text-label);
+  line-height: var(--text-label--line-height);
+  font-weight: var(--text-label--font-weight);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+/* ---------- Links ---------- */
+
+/* Inline text link: underlined, underline fades on hover. */
+@utility link {
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+  text-decoration-color: currentColor;
+  transition: text-decoration-color var(--duration-base) var(--ease-standard);
+
+  &:hover {
+    text-decoration-color: transparent;
+  }
+}
+
+/* Quiet link: no underline until hover (footers, lists). */
+@utility link-quiet {
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+  text-decoration-color: transparent;
+  transition: text-decoration-color var(--duration-base) var(--ease-standard);
+
+  &:hover {
+    text-decoration-color: currentColor;
+  }
+}
+
+/* Uppercase call-to-action link used under editorial imagery. */
+@utility link-cta {
+  font-size: var(--text-label);
+  line-height: var(--text-label--line-height);
+  font-weight: var(--text-label--font-weight);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.5em;
+  transition: text-decoration-color var(--duration-base) var(--ease-standard);
+
+  &:hover {
+    text-decoration-color: transparent;
+  }
+}
+
+/* Primary navigation item; current page keeps the underline. */
+@utility link-nav {
+  font-size: var(--text-label);
+  line-height: var(--text-label--line-height);
+  font-weight: var(--text-label--font-weight);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.5em;
+  text-decoration-color: transparent;
+  transition: text-decoration-color var(--duration-base) var(--ease-standard);
+
+  &:hover,
+  &[aria-current="page"] {
+    text-decoration-color: currentColor;
+  }
+}
+
+/* ---------- Buttons ----------
+ * `btn` owns geometry and reads colours from --btn-* custom properties;
+ * variants only set those properties, so class order never matters.
+ * Usage: <button class="btn btn-primary">, <a class="btn btn-secondary btn-sm">.
+ */
+
+@utility btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: var(--btn-height, 3rem);
+  padding-inline: var(--btn-padding, 2rem);
+  border: 1px solid var(--btn-border, transparent);
+  background-color: var(--btn-bg, transparent);
+  color: var(--btn-fg, inherit);
+  font-size: var(--text-label);
+  line-height: 1;
+  font-weight: var(--text-label--font-weight);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  cursor: pointer;
+  transition-property: background-color, border-color, color;
+  transition-duration: var(--duration-base);
+  transition-timing-function: var(--ease-standard);
+
+  &:hover {
+    background-color: var(--btn-bg-hover, var(--btn-bg, transparent));
+    border-color: var(--btn-border-hover, var(--btn-border, transparent));
+    color: var(--btn-fg-hover, var(--btn-fg, inherit));
+  }
+
+  &:disabled,
+  &[aria-disabled="true"] {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+}
+
+/* Solid ink: the one main action per view (add to bag, checkout). */
+@utility btn-primary {
+  --btn-bg: var(--color-ink);
+  --btn-fg: var(--color-canvas);
+  --btn-border: var(--color-ink);
+  --btn-bg-hover: color-mix(in oklab, var(--color-ink) 80%, var(--color-canvas));
+  --btn-border-hover: color-mix(in oklab, var(--color-ink) 80%, var(--color-canvas));
+}
+
+/* Outline: secondary actions; fills on hover. */
+@utility btn-secondary {
+  --btn-bg: transparent;
+  --btn-fg: var(--color-ink);
+  --btn-border: var(--color-ink);
+  --btn-bg-hover: var(--color-ink);
+  --btn-fg-hover: var(--color-canvas);
+}
+
+/* Solid white over dark imagery. */
+@utility btn-inverse {
+  --btn-bg: var(--color-canvas);
+  --btn-fg: var(--color-ink);
+  --btn-border: var(--color-canvas);
+  --btn-bg-hover: var(--color-surface-strong);
+  --btn-border-hover: var(--color-surface-strong);
+}
+
+/* White outline over imagery. */
+@utility btn-on-media {
+  --btn-bg: transparent;
+  --btn-fg: var(--color-canvas);
+  --btn-border: var(--color-canvas);
+  --btn-bg-hover: var(--color-canvas);
+  --btn-fg-hover: var(--color-ink);
+}
+
+/* Text-only button (e.g. "Clear filters"). */
+@utility btn-ghost {
+  --btn-padding: 0.75rem;
+  --btn-fg: var(--color-ink);
+  --btn-bg-hover: var(--color-surface);
+}
+
+@utility btn-sm {
+  --btn-height: 2.5rem;
+  --btn-padding: 1.25rem;
+}
+
+@utility btn-lg {
+  --btn-height: 3.5rem;
+  --btn-padding: 2.5rem;
+}
+
+@utility btn-block {
+  width: 100%;
+}
+
+/* Square icon button with a 44px touch target (bag, search, menu). */
+@utility btn-icon {
+  --btn-padding: 0;
+  --btn-height: 2.75rem;
+  width: 2.75rem;
+}
+
+/* ---------- Borders ---------- */
+
+/* Full-width hairline separator; use on <hr> or an empty div. */
+@utility divider {
+  width: 100%;
+  height: 0;
+  border: 0;
+  border-top: 1px solid var(--color-line);
+}

@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Atelier Store
 
-## Getting Started
+Next.js (App Router) eCommerce foundation.
 
-First, run the development server:
+**Stack:** TypeScript · Tailwind CSS v4 · Better Auth · Drizzle ORM · Neon Postgres
+
+## Getting started
 
 ```bash
+cp .env.example .env.local   # fill in DATABASE_URL and BETTER_AUTH_SECRET
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Generate a secret with `openssl rand -base64 32`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+  app/
+    api/auth/[...all]/route.ts   Better Auth route handler
+    layout.tsx, page.tsx
+  db/
+    index.ts                     Drizzle client (Neon HTTP driver)
+    schema/index.ts              Schema barrel — export all tables from here
+  lib/
+    env.ts                       Required server env vars (fails fast)
+    auth/server.ts               Better Auth instance (server only)
+    auth/client.ts               Better Auth React client
+drizzle/                         Generated SQL migrations
+drizzle.config.ts                drizzle-kit config (reads .env.local)
+```
 
-## Learn More
+## Scripts
 
-To learn more about Next.js, take a look at the following resources:
+| Script                  | Purpose                                                |
+| ----------------------- | ------------------------------------------------------ |
+| `npm run dev`           | Start the dev server                                   |
+| `npm run build`         | Production build                                       |
+| `npm run lint`          | ESLint                                                 |
+| `npm run typecheck`     | TypeScript check                                       |
+| `npm run auth:generate` | Generate Better Auth tables into `src/db/schema/auth.ts` |
+| `npm run db:generate`   | Create SQL migrations from the schema                  |
+| `npm run db:migrate`    | Apply migrations to the database                       |
+| `npm run db:push`       | Push the schema directly (prototyping)                 |
+| `npm run db:studio`     | Open Drizzle Studio                                    |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Next steps
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. `npm run auth:generate`, then add `export * from "./auth";` to `src/db/schema/index.ts`.
+2. `npm run db:generate && npm run db:migrate`.
+3. Enable auth methods (e.g. `emailAndPassword`) in `src/lib/auth/server.ts`.

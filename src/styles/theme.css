@@ -1,0 +1,108 @@
+/*
+ * Design tokens.
+ *
+ * Every token in an @theme block also generates Tailwind utilities, e.g.
+ * --color-ink → text-ink / bg-ink / border-ink, --spacing-gutter → px-gutter,
+ * --container-content → max-w-content, --text-display → text-display.
+ *
+ * Principles: monochrome canvas so imagery carries the colour, square corners,
+ * hairline borders instead of shadows, small uppercase tracked labels against
+ * large light headlines, generous fluid whitespace.
+ */
+
+:root {
+  --header-height: 3.5rem;
+
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 500ms;
+}
+
+@media (width >= 64rem) {
+  :root {
+    --header-height: 4.5rem;
+  }
+}
+
+@theme {
+  /* Colour: near-black on white, greys for hierarchy, one restrained accent. */
+  --color-canvas: #ffffff;
+  --color-ink: #0a0a0a;
+  --color-ink-muted: #545454; /* secondary text, 7.6:1 on canvas */
+  --color-ink-subtle: #707070; /* meta text, ≥4.5:1 on canvas and surface */
+  --color-surface: #f5f5f5; /* product image tiles, quiet bands */
+  --color-surface-strong: #ebebeb; /* hover/pressed on surface */
+  --color-line: #e0e0e0; /* hairline dividers, default border colour */
+  --color-line-strong: #8a8a8a; /* form controls, ≥3:1 on canvas */
+  --color-accent: #7a5c3e; /* sparing use only: badges, small highlights */
+  --color-danger: #b3261e; /* errors, sale prices */
+  --color-success: #1e6b3a;
+  --color-scrim: rgb(10 10 10 / 0.75); /* text over imagery */
+
+  /* Type scale: fluid display sizes, compact UI sizes. */
+  --text-display: clamp(2.5rem, 1.6rem + 3.6vw, 5rem);
+  --text-display--line-height: 1;
+  --text-display--letter-spacing: -0.02em;
+  --text-display--font-weight: 400;
+
+  --text-headline: clamp(1.75rem, 1.4rem + 1.4vw, 2.75rem);
+  --text-headline--line-height: 1.1;
+  --text-headline--letter-spacing: -0.015em;
+  --text-headline--font-weight: 400;
+
+  --text-title: clamp(1.25rem, 1.15rem + 0.4vw, 1.5rem);
+  --text-title--line-height: 1.25;
+  --text-title--letter-spacing: -0.01em;
+  --text-title--font-weight: 400;
+
+  --text-body-lg: 1.0625rem;
+  --text-body-lg--line-height: 1.6;
+
+  --text-body: 0.9375rem;
+  --text-body--line-height: 1.6;
+
+  --text-small: 0.8125rem;
+  --text-small--line-height: 1.5;
+
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1.4;
+
+  --text-label: 0.75rem;
+  --text-label--line-height: 1;
+  --text-label--letter-spacing: 0.08em;
+  --text-label--font-weight: 500;
+
+  --tracking-label: 0.08em;
+  --tracking-display: -0.02em;
+
+  /* Spacing: Tailwind's 4px scale plus fluid layout rhythm. */
+  --spacing-gutter: clamp(1rem, 0.5rem + 2vw, 2.5rem);
+  --spacing-section: clamp(3rem, 2rem + 4vw, 7.5rem);
+  --spacing-section-sm: clamp(2rem, 1.5rem + 2vw, 4rem);
+
+  /* Containers (max-w-*). Pages are wide; reading measure stays narrow. */
+  --container-page: 120rem;
+  --container-content: 80rem;
+  --container-measure: 42rem;
+  --container-narrow: 28rem;
+
+  /* Corners are square everywhere; rounded-full remains for dots/avatars. */
+  --radius-*: initial;
+
+  /* Depth comes from hairlines; one soft shadow for floating layers only. */
+  --shadow-overlay: 0 8px 32px rgb(0 0 0 / 0.08);
+
+  --aspect-product: 3 / 4;
+  --aspect-portrait: 4 / 5;
+  --aspect-landscape: 16 / 9;
+
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.3, 0, 0, 1);
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --spacing-header: var(--header-height);
+}
