@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { getCurrentUser, safeNext } from "@/lib/auth/session";
+import type { AuthMode } from "@/lib/auth/validation";
 import { AuthForm, AuthFormSkeleton } from "./auth-form";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -13,7 +14,7 @@ export function AuthPage({
   intro,
   searchParams,
 }: {
-  mode: "sign-in" | "sign-up";
+  mode: AuthMode;
   title: string;
   intro: string;
   searchParams: SearchParams;
@@ -25,7 +26,7 @@ export function AuthPage({
           <h1 className="text-headline">{title}</h1>
           <p className="mt-3 text-body-lg text-ink-muted">{intro}</p>
           <div className="mt-10">
-            <Suspense fallback={<AuthFormSkeleton />}>
+            <Suspense fallback={<AuthFormSkeleton mode={mode} />}>
               <AuthGate mode={mode} searchParams={searchParams} />
             </Suspense>
           </div>
@@ -39,7 +40,7 @@ async function AuthGate({
   mode,
   searchParams,
 }: {
-  mode: "sign-in" | "sign-up";
+  mode: AuthMode;
   searchParams: SearchParams;
 }) {
   const { next } = await searchParams;

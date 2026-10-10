@@ -78,3 +78,36 @@ export function ChevronRightIcon(props: IconProps) {
     </Icon>
   );
 }
+
+export function EyeIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z" />
+      <circle cx="12" cy="12" r="3" />
+    </Icon>
+  );
+}
+
+export function EyeOffIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z" />
+      <circle cx="12" cy="12" r="3" />
+      <path d="M4 20L20 4" />
+    </Icon>
+  );
+}
+
+/* Indeterminate progress ring; spins unless reduced motion is preferred. */
+export function SpinnerIcon(props: IconProps) {
+  return (
+    <Icon
+      strokeLinecap="butt"
+      {...props}
+      className={`motion-safe:animate-spin ${props.className ?? ""}`}
+    >
+      <circle cx="12" cy="12" r="8" opacity="0.25" />
+      <path d="M20 12a8 8 0 00-8-8" />
+    </Icon>
+  );
+}

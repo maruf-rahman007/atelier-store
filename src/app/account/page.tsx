@@ -1,73 +1,63 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { signOut } from "@/app/(auth)/actions";
 import { requireUser } from "@/lib/auth/session";
+import {
+  AccountPageSkeleton,
+  AccountSection,
+  DetailList,
+} from "./account-ui";
 
 export const metadata: Metadata = {
   title: "Your account | Atelier Store",
   robots: { index: false },
 };
 
-export default function AccountPage() {
+export default function AccountOverviewPage() {
   return (
-    <main className="flex-1">
-      <div className="container-content section-sm">
-        <p className="eyebrow text-ink-muted">Account</p>
-        <Suspense fallback={<AccountSkeleton />}>
-          <AccountDetails />
-        </Suspense>
-      </div>
-    </main>
+    <Suspense fallback={<AccountPageSkeleton />}>
+      <Overview />
+    </Suspense>
   );
 }
 
-const memberSince = new Intl.DateTimeFormat("en-US", {
-  month: "long",
-  year: "numeric",
-});
-
-async function AccountDetails() {
+async function Overview() {
   const user = await requireUser("/account");
+  const firstName = user.name.split(/\s+/)[0] || user.name;
 
   return (
     <>
-      <h1 className="mt-3 text-headline">Hello, {user.name}</h1>
+      <h1 className="text-headline">Hello, {firstName}</h1>
+      <p className="mt-3 text-body-lg text-ink-muted">
+        Manage your details and how you sign in to Atelier.
+      </p>
 
-      <dl className="mt-10 grid gap-6 border-t pt-8 sm:grid-cols-2">
-        <div>
-          <dt className="text-small text-ink-muted">Email</dt>
-          <dd className="mt-1 text-body-lg break-all">{user.email}</dd>
-        </div>
-        <div>
-          <dt className="text-small text-ink-muted">Member since</dt>
-          <dd className="mt-1 text-body-lg">
-            {memberSince.format(user.createdAt)}
-          </dd>
-        </div>
-      </dl>
+      <div className="mt-12 flex flex-col gap-12">
+        <AccountSection
+          title="Account details"
+          action={
+            <Link href="/account/details" className="link-cta shrink-0">
+              View all
+            </Link>
+          }
+        >
+          <DetailList
+            items={[
+              { label: "Name", value: user.name },
+              { label: "Email", value: user.email },
+            ]}
+          />
+        </AccountSection>
 
-      <div className="mt-10 flex flex-wrap gap-3 border-t pt-8">
-        {user.role === "admin" && (
-          <Link href="/admin" className="btn btn-secondary">
-            Admin
+        <AccountSection title="Keep exploring">
+          <p className="max-w-[48ch] text-body text-ink-muted">
+            New pieces arrive in small runs each season.
+          </p>
+          <Link href="/collections/new" className="btn btn-secondary mt-6">
+            Shop new arrivals
           </Link>
-        )}
-        <form action={signOut}>
-          <button type="submit" className="btn btn-secondary">
-            Sign out
-          </button>
-        </form>
+        </AccountSection>
       </div>
     </>
-  );
-}
-
-function AccountSkeleton() {
-  return (
-    <div aria-hidden className="animate-pulse">
-      <div className="mt-3 h-12 w-2/3 max-w-sm bg-surface" />
-      <div className="mt-10 h-24 border-t pt-8" />
-    </div>
   );
 }
