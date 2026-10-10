@@ -1,36 +1,20 @@
 "use client";
 
-import { useId, useState } from "react";
+import Link from "next/link";
+import { useActionState, useId, useState, type FormEvent } from "react";
+import { addToBag, type BagActionState } from "@/app/bag/actions";
+import { SpinnerIcon } from "@/components/icons";
+import { StockStatus } from "@/components/product/stock-status";
 import {
   isOneSize,
+  ONE_SIZE,
   productStock,
-  stockLabel,
-  stockLevel,
   type Product,
-  type StockLevel,
 } from "@/lib/products";
 
-const stockTone: Record<StockLevel, string> = {
-  "in-stock": "bg-success",
-  "low-stock": "bg-danger",
-  "out-of-stock": "bg-line-strong",
-};
-
-function StockStatus({ stock, prefix }: { stock: number; prefix?: string }) {
-  return (
-    <p className="flex items-center gap-2 text-small">
-      <span
-        aria-hidden="true"
-        className={`size-2 rounded-full ${stockTone[stockLevel(stock)]}`}
-      />
-      {prefix && <span className="text-ink-muted">{prefix}</span>}
-      {stockLabel(stock)}
-    </p>
-  );
-}
-
-/* Size selection, stock state and the add-to-bag action. The bag itself is
- * not built yet, so adding only confirms the selection. */
+/* Size selection, stock state and the add-to-bag form. The stock shown here
+ * comes from the cached product and can be a little old; addToBag checks live
+ * stock and current price on the server. */
 export function PurchasePanel({ product }: { product: Product }) {
   const sizeLegendId = useId();
   const messageId = useId();
@@ -41,36 +25,37 @@ export function PurchasePanel({ product }: { product: Product }) {
   const [selected, setSelected] = useState<string | null>(
     oneSize ? product.sizes[0].label : null,
   );
-  const [message, setMessage] = useState<{
-    tone: "error" | "success";
-    text: string;
-  } | null>(null);
+  const [sizeError, setSizeError] = useState(false);
+  const [state, formAction, pending] = useActionState<
+    BagActionState,
+    FormData
+  >(addToBag, { status: "idle" });
 
   const selectedSize = product.sizes.find((size) => size.label === selected);
+  /* Server messages belong to the size they were about; with no selection
+   * (a submit before hydration) the latest one is shown. */
+  const result =
+    state.status !== "idle" && (selected === null || state.size === selected)
+      ? state
+      : undefined;
 
-  const addToBag = () => {
-    if (!selectedSize) {
-      setMessage({
-        tone: "error",
-        text: "Select a size to add this to your bag.",
-      });
-      document
-        .querySelector<HTMLInputElement>(
-          `input[name="${sizeLegendId}"]:not(:disabled)`,
-        )
-        ?.focus();
-      return;
-    }
-    setMessage({
-      tone: "success",
-      text: oneSize
-        ? "Added to your bag."
-        : `Size ${selectedSize.label} added to your bag.`,
-    });
+  const checkSize = (event: FormEvent<HTMLFormElement>) => {
+    if (selectedSize) return;
+    event.preventDefault();
+    setSizeError(true);
+    event.currentTarget
+      .querySelector<HTMLInputElement>('input[name="size"]:not(:disabled)')
+      ?.focus();
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <form
+      action={formAction}
+      onSubmit={checkSize}
+      className="flex flex-col gap-6"
+    >
+      <input type="hidden" name="slug" value={product.slug} />
+      {oneSize && <input type="hidden" name="size" value={ONE_SIZE} />}
       {!oneSize && (
         <fieldset aria-describedby={messageId}>
           <legend id={sizeLegendId} className="text-small font-medium">
@@ -83,13 +68,13 @@ export function PurchasePanel({ product }: { product: Product }) {
                 <label key={size.label} className="relative">
                   <input
                     type="radio"
-                    name={sizeLegendId}
+                    name="size"
                     value={size.label}
                     disabled={unavailable}
                     checked={selected === size.label}
                     onChange={() => {
                       setSelected(size.label);
-                      setMessage(null);
+                      setSizeError(false);
                     }}
                     className="peer sr-only"
                     aria-label={
@@ -117,21 +102,43 @@ export function PurchasePanel({ product }: { product: Product }) {
 
       <div>
         <button
-          type="button"
+          type="submit"
           className="btn btn-primary btn-lg btn-block"
-          onClick={addToBag}
-          disabled={soldOut}
+          disabled={soldOut || pending}
         >
-          {soldOut ? "Out of stock" : "Add to bag"}
+          {soldOut ? (
+            "Out of stock"
+          ) : pending ? (
+            <>
+              <SpinnerIcon width={16} height={16} />
+              Adding…
+            </>
+          ) : (
+            "Add to bag"
+          )}
         </button>
         <p
           id={messageId}
           role="status"
-          className={`mt-3 text-small empty:mt-0 ${message?.tone === "error" ? "text-danger" : "text-ink"}`}
+          className={`mt-3 text-small empty:mt-0 ${sizeError || result?.status === "error" ? "text-danger" : "text-ink"}`}
         >
-          {message?.text}
+          {sizeError ? (
+            "Select a size to add this to your bag."
+          ) : result ? (
+            <>
+              {result.message}
+              {result.status === "success" && (
+                <>
+                  {" "}
+                  <Link href="/bag" className="link">
+                    View bag
+                  </Link>
+                </>
+              )}
+            </>
+          ) : null}
         </p>
       </div>
-    </div>
+    </form>
   );
 }

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Atelier Store: an eCommerce foundation on Next.js 16.4 (App Router, Turbopack), React 19.3, TypeScript (strict), Tailwind CSS v4, Better Auth, Drizzle ORM and Neon Postgres. The storefront reads a product catalogue from Postgres; there are no carts, orders or checkout yet.
+Atelier Store: an eCommerce foundation on Next.js 16.4 (App Router, Turbopack), React 19.3, TypeScript (strict), Tailwind CSS v4, Better Auth, Drizzle ORM and Neon Postgres. The storefront reads a product catalogue from Postgres and has a cookie-based shopping bag; there are no orders, payments or checkout yet.
 
 ## Commands
 
@@ -38,15 +38,16 @@ Setup: `cp .env.example .env.local` and fill in `DATABASE_URL` (Neon pooled conn
 - **DB driver.** Drizzle uses `drizzle-orm/neon-http` (stateless HTTP queries; no interactive transactions).
 - **Next config.** `cacheComponents: true` and `partialPrefetching: true` are on, so the Cache Components caching model applies (not the older `fetch`/`revalidate` model). See `node_modules/next/dist/docs/01-app/01-getting-started/08-caching.md` and `.../02-guides/optimizing-prefetching.md`.
 - **Styling.** Tailwind v4 is processed by the `@tailwindcss/turbopack` loader configured in `next.config.ts`; there is no PostCSS config. Theme tokens live in `src/app/globals.css` (`@theme inline`).
+- **Shopping bag.** The bag is an httpOnly `atelier_bag` cookie holding only `[slug, size, quantity]` tuples (no table, works signed out). `src/lib/bag-cookie.ts` is the only code that reads/writes it; `src/lib/bag.ts` has the client-safe types and pure helpers (parse, reconcile, subtotal). Names, prices and stock always come from `getBagProducts()` in `src/lib/queries/bag.ts`, which is deliberately **not** cached. Server Actions in `src/app/bag/actions.ts` (`addToBag`, `updateBagLine`, `removeBagLine`) accept only slug/size/quantity, validate against live stock (max 10 per line) and write back a reconciled cookie; setting the cookie re-renders the page. Bags don't reserve stock.
 - **Path alias.** `@/*` → `src/*`.
 
 ## Database conventions
 
-- **Scope.** The catalogue is only products, categories and per-size stock; auth adds the Better Auth tables (`user` with `role`, `session`, `account`, `verification`, `rate_limit`). Don't add carts, orders, payments, wishlists, reviews, warehouses or product variants until asked.
+- **Scope.** The catalogue is only products, categories and per-size stock; auth adds the Better Auth tables (`user` with `role`, `session`, `account`, `verification`, `rate_limit`). The bag is a cookie, not a table. Don't add orders, payments, wishlists, reviews, warehouses or product variants until asked.
 - **Money.** Store prices as integer minor units (`price_cents`). Currency is USD, fixed in code; there is no currency column.
 - **Stock.** Store one `product_stock` row per product + size. One-size products have a single `"One size"` row. Sizes have no SKU, price or image of their own; they are not variants.
 - **Schema changes.** Use `db:generate`, review the SQL, commit it, then run `db:migrate`. Don't use `db:push` on shared databases.
 - **Seeding.** Keep `db:seed` idempotent: upsert by slug and replace stock rows.
-- **Reads.** Only Server Components query the DB, through `server-only` functions marked `"use cache"`, with `cacheLife` and `cacheTag("products")`. Client Components import only types and pure helpers from `src/lib/products.ts`. Anything that must see live stock, such as a future checkout, reads it without the cache.
+- **Reads.** Only Server Components query the DB, through `server-only` functions marked `"use cache"`, with `cacheLife` and `cacheTag("products")`. Client Components import only types and pure helpers from `src/lib/products.ts`. Anything that must see live stock or current prices (the bag, a future checkout) reads without the cache.
 - **Build needs data.** With Cache Components, `generateStaticParams` must return at least one param, so `npm run build` needs a migrated, seeded database (an empty DB falls back to a placeholder slug).
 - **Identifiers.** Integer identity ids are internal. URLs and editorial lists in `src/lib/catalog.ts` reference products by slug.
