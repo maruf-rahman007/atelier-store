@@ -114,6 +114,37 @@ export async function getCategoryProducts(categorySlug: string) {
   return rows.map(toProduct);
 }
 
+/* Every word must match the name, colour, category or description; products
+ * whose name contains every word rank first. Expects a normalised query
+ * (see normaliseQuery). ILIKE ignores case. */
+export async function searchProducts(query: string) {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("products");
+
+  const patterns = query
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => `%${word.replace(/[\\%_]/g, "\\$&")}%`);
+  if (patterns.length === 0) return [];
+
+  const categoryName = sql`(select c.name from ${categories} c where c.id = ${products.categoryId})`;
+  const matches = patterns.map(
+    (pattern) =>
+      sql`(${products.name} ilike ${pattern} or ${products.colour} ilike ${pattern} or ${categoryName} ilike ${pattern} or ${products.description} ilike ${pattern})`,
+  );
+  const nameMatches = patterns.map(
+    (pattern) => sql`${products.name} ilike ${pattern}`,
+  );
+
+  const rows = await findProducts({
+    where: sql.join(matches, sql` and `),
+    orderBy: [sql`(${sql.join(nameMatches, sql` and `)}) desc`, asc(products.id)],
+    limit: 48,
+  });
+  return rows.map(toProduct);
+}
+
 /* Most recently added first; id breaks ties between products added together. */
 export async function getNewArrivals(limit = 24) {
   "use cache";

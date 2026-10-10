@@ -38,13 +38,18 @@ export function CollectionHeader({
 export function ProductGrid({
   id,
   products,
+  summary,
   empty,
 }: {
   id: string;
   products: Product[];
-  empty: { message: string; action: NavItem };
+  /* Replaces the default "N pieces" line above the grid. */
+  summary?: React.ReactNode;
+  /* Without it, an empty grid renders nothing. */
+  empty?: { message: string; action: NavItem };
 }) {
   if (products.length === 0) {
+    if (!empty) return null;
     return (
       <div className="container-page pb-section">
         <div className="flex flex-col items-start gap-6 border-t pt-8">
@@ -63,7 +68,8 @@ export function ProductGrid({
     <section aria-labelledby={id} className="pb-section">
       <div className="container-page">
         <p id={id} className="border-t py-4 text-small text-ink-subtle">
-          {products.length} {products.length === 1 ? "piece" : "pieces"}
+          {summary ??
+            `${products.length} ${products.length === 1 ? "piece" : "pieces"}`}
         </p>
       </div>
       <ul className="container-page grid-products mt-2">
@@ -87,6 +93,14 @@ export function CollectionSkeleton() {
         <div className="h-3 w-28 bg-surface" />
         <div className="mt-6 h-12 w-3/5 bg-surface md:h-16 md:w-2/5" />
       </div>
+      <ProductGridSkeleton />
+    </div>
+  );
+}
+
+export function ProductGridSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="Loading products">
       <div className="container-page pb-section">
         <div className="border-t py-4">
           <div className="h-4 w-16 bg-surface" />

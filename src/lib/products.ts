@@ -79,3 +79,14 @@ export function stockLabel(stock: number) {
       return "In stock";
   }
 }
+
+export const SEARCH_QUERY_MAX_LENGTH = 100;
+
+/* Search query from a URL param: first value, trimmed, single-spaced. */
+export function normaliseQuery(value: string | string[] | undefined) {
+  const query = Array.isArray(value) ? value[0] : value;
+  return (query ?? "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .slice(0, SEARCH_QUERY_MAX_LENGTH);
+}
