@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Atelier monogram: a couture "A" threaded by a single gilt stitch. -->
+  <rect width="32" height="32" fill="#0a0a0a"/>
+  <path d="M8.5 25 16 7.5 23.5 25" fill="none" stroke="#f4eee4" stroke-width="2.6" stroke-linejoin="miter" stroke-miterlimit="10"/>
+  <path d="M6 25h5.5M20.5 25H26" stroke="#f4eee4" stroke-width="1.6"/>
+  <path d="M4.5 18.5h23" stroke="#c9a46c" stroke-width="1.8"/>
+  <circle cx="27.5" cy="18.5" r="1.6" fill="#c9a46c"/>
+</svg>

@@ -2,6 +2,7 @@ import "server-only";
 
 import {
   asc,
+  desc,
   eq,
   inArray,
   ne,
@@ -12,7 +13,7 @@ import {
 import { cacheLife, cacheTag } from "next/cache";
 import { db } from "@/db";
 import { categories, products, productStock } from "@/db/schema";
-import type { Product } from "@/lib/products";
+import type { Product, ProductCategory } from "@/lib/products";
 
 /* Product reads for Server Components. Cached and tagged "products", so a
  * future admin or stock update can call revalidateTag("products"). */
@@ -77,6 +78,12 @@ export async function getProductsBySlugs(slugs: string[]) {
     .filter((product): product is Product => product !== undefined);
 }
 
+/* Relational queries rewrite every column reference to the root table's
+ * alias, so the subquery uses its own alias instead of column objects. */
+function inCategory(categorySlug: string) {
+  return sql`${products.categoryId} = (select c.id from ${categories} c where c.slug = ${categorySlug})`;
+}
+
 /* Same category first, then other products, excluding the current one. */
 export async function getRelatedProducts(
   slug: string,
@@ -87,12 +94,34 @@ export async function getRelatedProducts(
   cacheLife("hours");
   cacheTag("products");
 
-  /* Relational queries rewrite every column reference to the root table's
-   * alias, so the subquery uses its own alias instead of column objects. */
-  const sameCategory = sql`${products.categoryId} = (select c.id from ${categories} c where c.slug = ${categorySlug})`;
   const rows = await findProducts({
     where: ne(products.slug, slug),
-    orderBy: [sql`${sameCategory} desc`, asc(products.id)],
+    orderBy: [sql`${inCategory(categorySlug)} desc`, asc(products.id)],
+    limit,
+  });
+  return rows.map(toProduct);
+}
+
+export async function getCategoryProducts(categorySlug: string) {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("products");
+
+  const rows = await findProducts({
+    where: inCategory(categorySlug),
+    orderBy: [asc(products.id)],
+  });
+  return rows.map(toProduct);
+}
+
+/* Most recently added first; id breaks ties between products added together. */
+export async function getNewArrivals(limit = 24) {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("products");
+
+  const rows = await findProducts({
+    orderBy: [desc(products.createdAt), desc(products.id)],
     limit,
   });
   return rows.map(toProduct);
@@ -108,4 +137,16 @@ export async function getProductSlugs() {
     .from(products)
     .orderBy(asc(products.id));
   return rows.map((row) => row.slug);
+}
+
+/* Ordered as in navigation. */
+export async function getCategories(): Promise<ProductCategory[]> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("products");
+
+  return db
+    .select({ slug: categories.slug, name: categories.name })
+    .from(categories)
+    .orderBy(asc(categories.position), asc(categories.id));
 }
