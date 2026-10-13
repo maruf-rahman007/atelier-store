@@ -7,6 +7,7 @@ import { formatPrice, ONE_SIZE } from "@/lib/products";
 import { getOrderForUser, type OrderDetail } from "@/lib/queries/orders";
 import { AccountPageSkeleton, AccountSection, DetailList } from "../../account-ui";
 import { formatOrderDate, orderReference, orderStatusLabel } from "../order-ui";
+import { OrderWatcher } from "./order-watcher";
 
 export const metadata: Metadata = {
   title: "Order | Atelier Store",
@@ -29,6 +30,11 @@ async function Order({ params }: Pick<PageProps<"/account/orders/[id]">, "params
 
   return (
     <>
+      <OrderWatcher
+        publicId={order.publicId}
+        awaitingPayment={order.status === "pending"}
+        clearBag={order.paymentStatus === "paid" && !order.bagClearedAt}
+      />
       <p className="text-small">
         <Link href="/account/orders" className="link-quiet text-ink-muted">
           ← All orders
@@ -118,12 +124,9 @@ function StatusMessage({ order }: { order: OrderDetail }) {
     case "pending":
       return (
         <>
-          We’re waiting for your payment to be confirmed. Card payments take
-          a few seconds; bank payments can take a few days.{" "}
-          <Link href={`/account/orders/${order.publicId}`} className="link">
-            Refresh
-          </Link>{" "}
-          to check.
+          We’re waiting for Stripe to confirm your payment. Card payments take
+          a few seconds and this page updates by itself; bank payments can
+          take a few days.
         </>
       );
     case "requires_review":

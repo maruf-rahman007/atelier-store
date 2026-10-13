@@ -202,10 +202,11 @@ function shippingAddress(
 }
 
 /*
- * Applies a Checkout Session's outcome to its order. Called by the webhook and
- * by the return page, always with a session that came from Stripe (a
- * signature-verified event or sessions.retrieve), so it can be trusted.
- * Idempotent: every write is conditional on the order's current state.
+ * Applies a Checkout Session's outcome to its order. Only the webhook calls
+ * this, with the session from a signature-verified Stripe event; the browser's
+ * return to the success URL never records a payment. Idempotent: every write
+ * is conditional on the order's current state, so duplicate or late events
+ * change nothing.
  */
 export async function syncCheckoutSession(session: Stripe.Checkout.Session) {
   const publicId = session.metadata?.order_id ?? session.client_reference_id;
@@ -301,8 +302,9 @@ export async function failCheckoutSession(session: Stripe.Checkout.Session) {
 
 /*
  * Ends a customer's open checkout: expires the Stripe session so it can no
- * longer be paid, then releases the hold. If the session was already paid or
- * expired, Stripe refuses, and the order is synced from the session instead.
+ * longer be paid, then releases the hold. If Stripe refuses (the session was
+ * already completed or expired), nothing changes here; the webhook event for
+ * that outcome settles the order.
  */
 export async function cancelCheckout(order: {
   id: number;
@@ -312,17 +314,17 @@ export async function cancelCheckout(order: {
     await endUnpaidOrder(order.id, "cancelled");
     return;
   }
-  const stripe = getStripe();
+  let expired: boolean;
   try {
-    const session = await stripe.checkout.sessions.expire(
+    const session = await getStripe().checkout.sessions.expire(
       order.stripeCheckoutSessionId,
     );
-    await syncCheckoutSession(session);
+    expired = session.status === "expired";
   } catch {
-    await syncCheckoutSession(
-      await stripe.checkout.sessions.retrieve(order.stripeCheckoutSessionId),
-    );
+    return;
   }
+  /* Stripe has confirmed the session can no longer be paid. */
+  if (expired) await endUnpaidOrder(order.id, "expired");
 }
 
 /* Before a new checkout: end this customer's other open checkouts, so one
@@ -360,8 +362,8 @@ export async function releaseOrphanedOrders() {
   for (const order of orphaned) await endUnpaidOrder(order.id, "cancelled");
 }
 
-/* Marks the order's lines as removed from the bag. True only the first time,
- * so the return page takes them out of the bag cookie once. */
+/* Marks a paid order's lines as removed from the bag. True only the first
+ * time, so the order page takes them out of the bag cookie once. */
 export async function claimBagClear(orderId: number) {
   const claimed = await db
     .update(orders)
