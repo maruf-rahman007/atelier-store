@@ -15,6 +15,20 @@
       "when": 1791658849020,
       "tag": "0001_amusing_silhouette",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791908928307,
+      "tag": "0002_orders",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791908928787,
+      "tag": "0003_order_stock_functions",
+      "breakpoints": true
     }
   ]
 }

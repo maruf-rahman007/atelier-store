@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Atelier Store: an eCommerce foundation on Next.js 16.4 (App Router, Turbopack), React 19.3, TypeScript (strict), Tailwind CSS v4, Better Auth, Drizzle ORM and Neon Postgres. The storefront reads a product catalogue from Postgres and has a cookie-based shopping bag; there are no orders, payments or checkout yet.
+Atelier Store: an eCommerce foundation on Next.js 16.4 (App Router, Turbopack), React 19.3, TypeScript (strict), Tailwind CSS v4, Better Auth, Drizzle ORM and Neon Postgres. The storefront reads a product catalogue from Postgres and has a cookie-based shopping bag. The order schema for Stripe checkout exists (`src/db/schema/orders.ts`), but checkout itself isn't built yet.
 
 ## Commands
 
@@ -43,9 +43,10 @@ Setup: `cp .env.example .env.local` and fill in `DATABASE_URL` (Neon pooled conn
 
 ## Database conventions
 
-- **Scope.** The catalogue is only products, categories and per-size stock; auth adds the Better Auth tables (`user` with `role`, `session`, `account`, `verification`, `rate_limit`). The bag is a cookie, not a table. Don't add orders, payments, wishlists, reviews, warehouses or product variants until asked.
+- **Scope.** The catalogue is only products, categories and per-size stock; auth adds the Better Auth tables (`user` with `role`, `session`, `account`, `verification`, `rate_limit`). Checkout adds `orders` (owned by a `user`), `order_items` (name, slug, size and unit price snapshotted; `product_id` set null if the product is deleted) and `stripe_events` (webhook dedupe). The bag is a cookie, not a table. Don't add wishlists, reviews, warehouses or product variants until asked.
+- **Orders.** `status` (`order_status`: pending, placed, expired, cancelled, requires_review) is the lifecycle and `payment_status` (`unpaid`, `paid`, `refunded`) is payment; never infer one from the other. Payment fields are set only from a verified Stripe webhook or a server-side Stripe lookup, never from the client. Check constraints enforce `total = subtotal + shipping`, that paid orders carry `paid_at` and both Stripe ids, and that `placed` orders are paid.
 - **Money.** Store prices as integer minor units (`price_cents`). Currency is USD, fixed in code; there is no currency column.
-- **Stock.** Store one `product_stock` row per product + size. One-size products have a single `"One size"` row. Sizes have no SKU, price or image of their own; they are not variants.
+- **Stock.** Store one `product_stock` row per product + size. One-size products have a single `"One size"` row. Sizes have no SKU, price or image of their own; they are not variants. Checkout holds stock only through the Postgres functions `reserve_order_stock(order_id)` (all or nothing; false if any line is short or the order isn't pending and unreserved) and `release_order_stock(order_id)` (gives stock back once; never for paid orders), defined in `drizzle/0003_order_stock_functions.sql`. neon-http has no interactive transactions, so don't reimplement these as multiple queries.
 - **Schema changes.** Use `db:generate`, review the SQL, commit it, then run `db:migrate`. Don't use `db:push` on shared databases.
 - **Seeding.** Keep `db:seed` idempotent: upsert by slug and replace stock rows.
 - **Reads.** Only Server Components query the DB, through `server-only` functions marked `"use cache"`, with `cacheLife` and `cacheTag("products")`. Client Components import only types and pure helpers from `src/lib/products.ts`. Anything that must see live stock or current prices (the bag, a future checkout) reads without the cache.
