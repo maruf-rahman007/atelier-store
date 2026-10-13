@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { requireUser } from "@/lib/auth/session";
+import { SpinnerIcon } from "@/components/icons";
 import { formatPrice, ONE_SIZE } from "@/lib/products";
 import { getOrderForUser, type OrderDetail } from "@/lib/queries/orders";
 import { AccountPageSkeleton, AccountSection, DetailList } from "../../account-ui";
@@ -43,9 +44,14 @@ async function Order({ params }: Pick<PageProps<"/account/orders/[id]">, "params
       <h1 className="mt-4 text-headline">
         Order {orderReference(order.publicId)}
       </h1>
-      <p className="mt-3 text-body-lg text-ink-muted">
+      <p className="mt-3 text-body-lg text-ink-muted" role="status">
         <StatusMessage order={order} />
       </p>
+      {order.paymentStatus === "paid" && (
+        <Link href="/collections/new" className="btn btn-secondary mt-6">
+          Continue shopping
+        </Link>
+      )}
 
       <div className="mt-12 flex flex-col gap-12">
         <AccountSection title="Items">
@@ -124,6 +130,12 @@ function StatusMessage({ order }: { order: OrderDetail }) {
     case "pending":
       return (
         <>
+          <SpinnerIcon
+            width={16}
+            height={16}
+            aria-hidden="true"
+            className="mr-2 inline-block align-[-2px]"
+          />
           We’re waiting for Stripe to confirm your payment. Card payments take
           a few seconds and this page updates by itself; bank payments can
           take a few days.

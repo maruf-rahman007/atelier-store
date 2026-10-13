@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { BagActivityProvider } from "@/components/bag/bag-activity";
 import { BagList } from "@/components/bag/bag-list";
 import { CheckoutForm } from "@/components/bag/checkout-form";
 import { bagCount, bagSubtotalCents, buildBagLines } from "@/lib/bag";
+import { getCurrentUser } from "@/lib/auth/session";
 import { readBag } from "@/lib/bag-cookie";
 import { categoryHref, formatPrice } from "@/lib/products";
 import { getBagProducts } from "@/lib/queries/bag";
@@ -46,7 +48,10 @@ async function BagContents({
 }: Pick<PageProps<"/bag">, "searchParams">) {
   const cancelled = (await searchParams).checkout === "cancelled";
   const items = await readBag();
-  const products = await getBagProducts(items.map((item) => item.slug));
+  const [products, user] = await Promise.all([
+    getBagProducts(items.map((item) => item.slug)),
+    getCurrentUser(),
+  ]);
   const lines = buildBagLines(items, products);
 
   if (lines.length === 0) return <EmptyBag />;
@@ -57,53 +62,66 @@ async function BagContents({
   const subtotal = bagSubtotalCents(lines);
 
   return (
-    <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-16">
-      {cancelled && (
-        <p role="status" className="border-y py-4 text-small lg:col-span-2">
-          Checkout cancelled. Nothing was charged, and your bag is as you left
-          it.
-        </p>
-      )}
-      <BagList lines={lines} />
-
-      <section
-        aria-labelledby="bag-summary"
-        className="self-start border-t pt-6 lg:sticky lg:top-[calc(var(--header-height)+1.5rem)]"
-      >
-        <h2 id="bag-summary" className="text-title">
-          Summary
-        </h2>
-        <dl className="mt-6 flex flex-col gap-3 text-small">
-          <div className="flex justify-between gap-4">
-            <dt className="text-ink-muted">
-              Subtotal ({count} {count === 1 ? "item" : "items"})
-            </dt>
-            <dd className="tabular-nums">{formatPrice(subtotal)}</dd>
+    <BagActivityProvider>
+      <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-16">
+        {cancelled && (
+          <div role="status" className="border px-4 py-3 lg:col-span-2">
+            <p className="text-small font-medium">Checkout cancelled</p>
+            <p className="mt-1 text-small text-ink-muted">
+              Nothing was charged and your pieces are no longer held. Your bag
+              is as you left it, so you can check out again when you’re ready.
+            </p>
           </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-ink-muted">Delivery</dt>
-            <dd>Free</dd>
-          </div>
-        </dl>
-        {soldOut > 0 && (
-          <p className="mt-4 text-small text-danger">
-            {soldOut === 1
-              ? "1 sold-out piece isn’t included."
-              : `${soldOut} sold-out pieces aren’t included.`}{" "}
-            Remove {soldOut === 1 ? "it" : "them"} before checkout.
-          </p>
         )}
-        <CheckoutForm subtotalCents={subtotal} disabled={soldOut > 0} />
-        <p className="mt-6 text-caption text-ink-subtle">
-          Prices and availability are checked again at checkout. Adding to your
-          bag doesn’t reserve a piece; starting checkout holds them for 30
-          minutes.
-        </p>
-        <Link href="/collections/new" className="btn btn-secondary btn-block mt-4">
-          Continue shopping
-        </Link>
-      </section>
-    </div>
+        <BagList lines={lines} />
+
+        <section
+          aria-labelledby="bag-summary"
+          className="self-start lg:sticky lg:border-t lg:pt-6 lg:top-[calc(var(--header-height)+1.5rem)]"
+        >
+          <h2 id="bag-summary" className="text-title">
+            Summary
+          </h2>
+          <dl className="mt-6 flex flex-col gap-3 text-small">
+            <div className="flex justify-between gap-4">
+              <dt className="text-ink-muted">
+                Subtotal ({count} {count === 1 ? "item" : "items"})
+              </dt>
+              <dd className="tabular-nums">{formatPrice(subtotal)}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-ink-muted">Delivery</dt>
+              <dd>Free</dd>
+            </div>
+            <div className="mt-1 flex justify-between gap-4 border-t pt-4 text-body-lg font-medium">
+              <dt>Total</dt>
+              <dd className="tabular-nums">{formatPrice(subtotal)}</dd>
+            </div>
+          </dl>
+          {soldOut > 0 && (
+            <p className="mt-4 text-small text-danger">
+              {soldOut === 1
+                ? "1 sold-out piece isn’t included."
+                : `${soldOut} sold-out pieces aren’t included.`}{" "}
+              Remove {soldOut === 1 ? "it" : "them"} before checkout.
+            </p>
+          )}
+          <CheckoutForm
+            subtotalCents={subtotal}
+            blocked={soldOut > 0}
+            signedIn={user !== null}
+          />
+          <p className="mt-6 text-caption text-ink-subtle">
+            Prices and availability are checked again at checkout. Adding to your
+            bag doesn’t reserve a piece; starting checkout holds them for 30
+            minutes. All prices in USD.
+          </p>
+          <Link href="/collections/new" className="btn btn-secondary btn-block mt-4">
+            Continue shopping
+          </Link>
+        </section>
+      </div>
+    </BagActivityProvider>
   );
 }
 

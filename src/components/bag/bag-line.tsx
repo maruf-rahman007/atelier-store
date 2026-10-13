@@ -8,6 +8,7 @@ import {
   updateBagLine,
   type BagActionState,
 } from "@/app/bag/actions";
+import { useBagActivity, useTrackPending } from "@/components/bag/bag-activity";
 import { SpinnerIcon } from "@/components/icons";
 import { StockStatus } from "@/components/product/stock-status";
 import { MAX_LINE_QUANTITY, type BagLine as BagLineData } from "@/lib/bag";
@@ -27,7 +28,10 @@ export function BagLine({ line }: { line: BagLineData }) {
     removeBagLine,
     idle,
   );
-  const pending = updating || removing;
+  useTrackPending(updating || removing);
+  /* Locked while checkout starts, so the order matches what's on screen. */
+  const { checkingOut } = useBagActivity();
+  const pending = updating || removing || checkingOut;
   const soldOut = line.status === "out-of-stock";
   const atLimit = !soldOut && line.quantity >= line.maxQuantity;
   const href = `/products/${line.slug}`;
