@@ -14,6 +14,22 @@ npm run dev
 
 Generate a secret with `openssl rand -base64 32`.
 
+### Stripe checkout
+
+Checkout uses hosted Stripe Checkout. Add to `.env.local`:
+
+- `STRIPE_SECRET_KEY`: preferably a restricted key (`rk_test_…`) with write access to Checkout Sessions, from a Stripe sandbox.
+- `STRIPE_WEBHOOK_SECRET`: the `whsec_…` printed by the Stripe CLI (locally) or shown for the Dashboard webhook endpoint.
+
+Locally, forward events with the [Stripe CLI](https://docs.stripe.com/stripe-cli):
+
+```bash
+stripe listen --forward-to localhost:3000/api/stripe/webhook \
+  --events checkout.session.completed,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed,checkout.session.expired
+```
+
+Pay with test card `4242 4242 4242 4242` (any future date and CVC); `4000 0000 0000 0002` is declined.
+
 ## Project structure
 
 ```

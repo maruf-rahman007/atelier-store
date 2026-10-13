@@ -1,0 +1,1 @@
+ALTER TABLE "orders" ADD COLUMN "bag_cleared_at" timestamp with time zone;

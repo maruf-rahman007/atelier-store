@@ -82,6 +82,9 @@ export const orders = pgTable(
      * stock is taken and given back at most once per order. */
     stockReservedAt: timestamp("stock_reserved_at", { withTimezone: true }),
     stockReleasedAt: timestamp("stock_released_at", { withTimezone: true }),
+    /* Set once when the return page removes the ordered pieces from the
+     * bag cookie, so revisiting it doesn't remove them again. */
+    bagClearedAt: timestamp("bag_cleared_at", { withTimezone: true }),
     reviewReason: text("review_reason"),
     ...timestamps,
   },

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { BagList } from "@/components/bag/bag-list";
+import { CheckoutForm } from "@/components/bag/checkout-form";
 import { bagCount, bagSubtotalCents, buildBagLines } from "@/lib/bag";
 import { readBag } from "@/lib/bag-cookie";
 import { categoryHref, formatPrice } from "@/lib/products";
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
 
 /* The heading is static; the contents read the bag cookie and live prices
  * and stock, so they stream in behind Suspense. */
-export default function BagPage() {
+export default function BagPage({ searchParams }: PageProps<"/bag">) {
   return (
     <main className="flex-1">
       <div className="container-page pb-section pt-6 md:pt-10">
@@ -33,14 +34,17 @@ export default function BagPage() {
         <h1 className="mt-6 text-display">Your bag</h1>
 
         <Suspense fallback={<BagSkeleton />}>
-          <BagContents />
+          <BagContents searchParams={searchParams} />
         </Suspense>
       </div>
     </main>
   );
 }
 
-async function BagContents() {
+async function BagContents({
+  searchParams,
+}: Pick<PageProps<"/bag">, "searchParams">) {
+  const cancelled = (await searchParams).checkout === "cancelled";
   const items = await readBag();
   const products = await getBagProducts(items.map((item) => item.slug));
   const lines = buildBagLines(items, products);
@@ -54,6 +58,12 @@ async function BagContents() {
 
   return (
     <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-16">
+      {cancelled && (
+        <p role="status" className="border-y py-4 text-small lg:col-span-2">
+          Checkout cancelled. Nothing was charged, and your bag is as you left
+          it.
+        </p>
+      )}
       <BagList lines={lines} />
 
       <section
@@ -83,11 +93,13 @@ async function BagContents() {
             Remove {soldOut === 1 ? "it" : "them"} before checkout.
           </p>
         )}
+        <CheckoutForm subtotalCents={subtotal} disabled={soldOut > 0} />
         <p className="mt-6 text-caption text-ink-subtle">
           Prices and availability are checked again at checkout. Adding to your
-          bag doesn’t reserve a piece.
+          bag doesn’t reserve a piece; starting checkout holds them for 30
+          minutes.
         </p>
-        <Link href="/collections/new" className="btn btn-secondary btn-block mt-6">
+        <Link href="/collections/new" className="btn btn-secondary btn-block mt-4">
           Continue shopping
         </Link>
       </section>
