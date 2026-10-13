@@ -1,50 +1,84 @@
-import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { requireAdmin } from "@/lib/auth/session";
 import { refreshCatalogue } from "./actions";
+import { AdminGate } from "./admin-gate";
+import { AdminPageHeader, AdminPageSkeleton, AdminSection } from "./admin-ui";
 
-export const metadata: Metadata = {
-  title: "Admin | Atelier Store",
-  robots: { index: false },
-};
+const sections = [
+  {
+    href: "/admin/products",
+    label: "Products",
+    description: "Create products and edit their details and prices.",
+  },
+  {
+    href: "/admin/stock",
+    label: "Stock",
+    description: "See what’s running low and update quantities.",
+  },
+  {
+    href: "/admin/categories",
+    label: "Categories",
+    description: "Add, rename and order categories.",
+  },
+  {
+    href: "/admin/orders",
+    label: "Orders",
+    description: "Look up customers’ orders and their payment state.",
+  },
+] as const;
 
 export default function AdminPage() {
   return (
-    <main className="flex-1">
-      <div className="container-content section-sm">
-        <p className="eyebrow text-ink-muted">Admin</p>
-        <Suspense
-          fallback={<div aria-hidden className="mt-3 h-12 w-1/2 animate-pulse bg-surface" />}
-        >
-          <AdminDashboard />
-        </Suspense>
-      </div>
-    </main>
+    <Suspense fallback={<AdminPageSkeleton />}>
+      <AdminGate path="/admin">
+        <AdminOverview />
+      </AdminGate>
+    </Suspense>
   );
 }
 
-async function AdminDashboard() {
-  const user = await requireAdmin();
+async function AdminOverview() {
+  const user = await requireAdmin("/admin");
 
   return (
     <>
-      <h1 className="mt-3 text-headline">Store admin</h1>
-      <p className="mt-3 text-body-lg text-ink-muted">
-        Signed in as {user.email}.
-      </p>
+      <AdminPageHeader
+        title="Store admin"
+        intro={`Signed in as ${user.email}.`}
+      />
 
-      <section className="mt-10 border-t pt-8">
-        <h2 className="text-title">Catalogue cache</h2>
-        <p className="mt-2 max-w-[60ch] text-body text-ink-muted">
-          Product pages are cached. After re-seeding or editing products in the
-          database, refresh the cache so the storefront shows the changes.
-        </p>
-        <form action={refreshCatalogue} className="mt-6">
-          <button type="submit" className="btn btn-secondary">
-            Refresh catalogue
-          </button>
-        </form>
-      </section>
+      <div className="mt-12 flex flex-col gap-12">
+        <AdminSection title="Manage">
+          <ul className="border-t">
+            {sections.map((section) => (
+              <li key={section.href} className="border-b">
+                <Link href={section.href} className="group block py-5">
+                  <span className="block font-medium group-hover:underline">
+                    {section.label}
+                  </span>
+                  <span className="block text-small text-ink-muted">
+                    {section.description}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </AdminSection>
+
+        <AdminSection title="Catalogue cache">
+          <p className="max-w-[60ch] text-body text-ink-muted">
+            Product pages are cached. After re-seeding or editing products in
+            the database, refresh the cache so the storefront shows the
+            changes.
+          </p>
+          <form action={refreshCatalogue} className="mt-6">
+            <button type="submit" className="btn btn-secondary">
+              Refresh catalogue
+            </button>
+          </form>
+        </AdminSection>
+      </div>
     </>
   );
 }
