@@ -17,6 +17,8 @@ export type BagItem = {
 
 /* Current catalogue data for a product in the bag. */
 export type BagProduct = {
+  /* Internal id, used only server-side to link order lines. */
+  id: number;
   slug: string;
   name: string;
   colour: string;
@@ -185,4 +187,21 @@ export function bagSubtotalCents(lines: BagLine[]) {
       line.status === "out-of-stock" ? sum : sum + line.priceCents * line.quantity,
     0,
   );
+}
+
+/* The bag after an order: each ordered quantity taken off its line, so
+ * pieces added after checkout started stay in the bag. */
+export function removeOrderedFromBag(
+  items: BagItem[],
+  ordered: { slug: string; size: string; quantity: number }[],
+): BagItem[] {
+  const remove = new Map(
+    ordered.map((line) => [lineKey(line.slug, line.size), line.quantity]),
+  );
+  return items
+    .map((item) => ({
+      ...item,
+      quantity: item.quantity - (remove.get(lineKey(item.slug, item.size)) ?? 0),
+    }))
+    .filter((item) => item.quantity > 0);
 }

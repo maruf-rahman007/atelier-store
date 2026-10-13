@@ -19,6 +19,7 @@ export async function getBagProducts(
   const rows = await db.query.products.findMany({
     where: inArray(products.slug, unique),
     columns: {
+      id: true,
       slug: true,
       name: true,
       colour: true,
@@ -32,6 +33,7 @@ export async function getBagProducts(
     rows.map((row) => [
       row.slug,
       {
+        id: row.id,
         slug: row.slug,
         name: row.name,
         colour: row.colour,
