@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, not } from "drizzle-orm";
 import { db } from "@/db";
 import { orders } from "@/db/schema";
 
@@ -10,10 +10,15 @@ import { orders } from "@/db/schema";
  * must see that straight away.
  */
 
-export async function getOrdersForUser(userId: string) {
+/* Checkouts cancelled before payment started aren't orders to the customer. */
+export async function getOrdersForUser(userId: string, limit?: number) {
   return db.query.orders.findMany({
-    where: eq(orders.userId, userId),
+    where: and(
+      eq(orders.userId, userId),
+      not(and(eq(orders.status, "cancelled"), eq(orders.paymentStatus, "unpaid"))!),
+    ),
     orderBy: desc(orders.createdAt),
+    limit,
     columns: {
       publicId: true,
       status: true,

@@ -7,15 +7,15 @@ export const orderReference = (publicId: string) =>
 export const formatOrderDate = (date: Date) =>
   new Intl.DateTimeFormat("en-US", { dateStyle: "long" }).format(date);
 
-/* Payment status decides "paid"; order status covers everything else. */
-export function orderStatusLabel(
-  order: Pick<OrderSummary, "status" | "paymentStatus">,
-) {
-  if (order.paymentStatus === "refunded") return "Refunded";
-  if (order.paymentStatus === "paid") {
-    return order.status === "requires_review" ? "Paid, under review" : "Paid";
-  }
-  switch (order.status) {
+export const paymentStatusLabel = (
+  paymentStatus: OrderSummary["paymentStatus"],
+) =>
+  ({ unpaid: "Unpaid", paid: "Paid", refunded: "Refunded" })[paymentStatus];
+
+/* What happened to the order itself, when that adds to the payment status.
+ * Placed orders need no note. */
+export function orderProgressNote(status: OrderSummary["status"]) {
+  switch (status) {
     case "pending":
       return "Awaiting payment";
     case "expired":
@@ -25,6 +25,9 @@ export function orderStatusLabel(
     case "requires_review":
       return "Under review";
     default:
-      return "Placed";
+      return null;
   }
 }
+
+export const orderStateLabel = (status: OrderSummary["status"]) =>
+  orderProgressNote(status) ?? "Placed";

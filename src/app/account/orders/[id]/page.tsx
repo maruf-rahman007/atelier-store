@@ -7,7 +7,12 @@ import { SpinnerIcon } from "@/components/icons";
 import { formatPrice, ONE_SIZE } from "@/lib/products";
 import { getOrderForUser, type OrderDetail } from "@/lib/queries/orders";
 import { AccountPageSkeleton, AccountSection, DetailList } from "../../account-ui";
-import { formatOrderDate, orderReference, orderStatusLabel } from "../order-ui";
+import {
+  formatOrderDate,
+  orderReference,
+  orderStateLabel,
+  paymentStatusLabel,
+} from "../order-ui";
 import { OrderWatcher } from "./order-watcher";
 
 export const metadata: Metadata = {
@@ -69,8 +74,10 @@ async function Order({ params }: Pick<PageProps<"/account/orders/[id]">, "params
                   </p>
                   <p className="text-ink-subtle">
                     {item.colour}
-                    {item.size !== ONE_SIZE && ` · Size ${item.size}`} · Qty{" "}
-                    {item.quantity}
+                    {item.size !== ONE_SIZE && ` · Size ${item.size}`}
+                  </p>
+                  <p className="text-ink-subtle tabular-nums">
+                    Qty {item.quantity} × {formatPrice(item.unitPriceCents)}
                   </p>
                 </div>
                 <p className="shrink-0 tabular-nums">
@@ -99,7 +106,8 @@ async function Order({ params }: Pick<PageProps<"/account/orders/[id]">, "params
           <DetailList
             items={[
               { label: "Placed", value: formatOrderDate(order.createdAt) },
-              { label: "Status", value: orderStatusLabel(order) },
+              { label: "Order status", value: orderStateLabel(order.status) },
+              { label: "Payment", value: paymentStatusLabel(order.paymentStatus) },
               { label: "Confirmation email", value: order.email },
               {
                 label: "Delivery address",
